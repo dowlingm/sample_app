@@ -1,6 +1,8 @@
 require 'spec_helper'
 
 describe "AuthenticationPages" do
+  let(:user) { FactoryGirl.create(:user) }
+
   
   subject { page }
 
@@ -12,6 +14,7 @@ describe "AuthenticationPages" do
   end
 
   describe "signin" do
+
   	before { visit signin_path }
 
   	describe "with invalid information" do
@@ -23,11 +26,17 @@ describe "AuthenticationPages" do
   		describe "after visiting home page" do
   			before { click_link "Home" }
   			it { should_not have_selector('div.alert.alert-error') }
+
+  			it { should_not have_link('Users',    href: users_path) }
+      	it { should_not have_link('Profile',  href: user_path(user)) }
+     		it { should_not have_link('Settings', href: edit_user_path(user)) }
+      	it { should_not have_link('Sign out', href: signout_path) }
+      	it { should have_link('Sign in', href: signin_path) }
+      	it { should have_link('Home', href: root_path)}
   		end
   	end
 
   	describe "with valid information" do
-      let(:user) { FactoryGirl.create(:user) }
       before { sign_in user }
 
       it { should have_selector('title', text: user.name) }
@@ -84,10 +93,22 @@ describe "AuthenticationPages" do
           it { should have_selector('title', text: 'Sign in') }
         end
       end
+
+      describe "in the Microposts controller" do
+
+        describe "submitting to the create action" do
+          before { post microposts_path }
+          specify { response.should redirect_to(signin_path) }
+        end
+
+        describe "submitting to the destroy action" do
+          before { delete micropost_path(FactoryGirl.create(:micropost)) }
+          specify { response.should redirect_to(signin_path) }
+        end
+      end
     end
 
     describe "as wrong user" do
-      let(:user) { FactoryGirl.create(:user) }
       let(:wrong_user) { FactoryGirl.create(:user, email: "wrong@example.com") }
       before { sign_in user }
 
@@ -103,7 +124,6 @@ describe "AuthenticationPages" do
     end
 
     describe "as non-admin user" do
-      let(:user) { FactoryGirl.create(:user) }
       let(:non_admin) { FactoryGirl.create(:user) }
 
       before { sign_in non_admin }
